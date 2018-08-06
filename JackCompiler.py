@@ -12,7 +12,7 @@ class JackAnalyzer:
         self.final_output_filename = ''
         if os.path.isdir(input_path):
             path=os.listdir(input_path)
-            for filename in os.listdir(input_path):
+            for filename in path:
                 if filename.split('.')[-1]=='jack':
                     self.input_filenames.append(os.path.join(input_path,filename))
             if len(self.input_filenames) == 0:
@@ -57,4 +57,4 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    main(r'D:\Dropbox\SEU_Graduate\nand2tetris\projects\10\ExpressionLessSquare')
+    main(r'D:\Dropbox\SEU_Graduate\nand2tetris\projects\10\Square')

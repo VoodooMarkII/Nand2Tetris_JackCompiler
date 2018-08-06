@@ -1,18 +1,48 @@
 import xml.dom.minidom
+import SymbolTable
+import VMWriter
 
 
 class CompilationEngine:
+    ARITHMETIC_OPCODES = {
+        '+': 'add',
+        '-': 'sub',
+        '=': 'eq',
+        '>': 'gt',
+        '<': 'lt',
+        '&': 'and',
+        '|': 'or'
+    }
+
+    ARITHMETIC_UNARY_OPCODE = {
+        '-': 'neg',
+        '~': 'not'
+    }
+
+    STACK_SYMBOL_KIND = {
+        'argument': 'argument',
+        'var': 'local',
+        'field': 'this',
+        'static': 'static'
+    }
+
     def __init__(self, input_filename, output_file=None):
         self.input_filename = input_filename
         self.output_file = output_file
+        self.symbol_table = SymbolTable.SymbolTable()
+        self.subroutine_type = ''
 
         self.in_xml = xml.dom.minidom.parse(self.input_filename)
         self.input_child_node_idx = 1
+
+        self.vm_writer = VMWriter.VMWriter(input_filename[:-5])
+
         self.current_token = self.in_xml.documentElement.childNodes[self.input_child_node_idx]
         self.doc = xml.dom.minidom.Document()
         while self.current_token.nodeName == 'keyword' and self.current_token.childNodes[0].nodeValue == 'class':
             self.compile_class()
         self.__save_xml()
+
         pass
 
     def compile_class(self):
@@ -34,10 +64,10 @@ class CompilationEngine:
             class_node.appendChild(self.current_token)
             self.__idx_advance()
             while self.current_token.nodeName == 'keyword' and \
-                    self.current_token.childNodes[0].nodeValue in['static','field']:
+                    self.current_token.childNodes[0].nodeValue in ['static', 'field']:
                 self.compile_class_var_dec(class_node)
             while self.current_token.nodeName == 'keyword' and \
-                    self.current_token.childNodes[0].nodeValue in ['constructor','function','method']:
+                    self.current_token.childNodes[0].nodeValue in ['constructor', 'function', 'method']:
                 self.compile_subroutine_dec(class_node)
         else:
             raise SyntaxError("'{' expected.")
@@ -54,19 +84,23 @@ class CompilationEngine:
             class_var_dec_node = self.doc.createElement('classVarDec')
             father_node.appendChild(class_var_dec_node)
             class_var_dec_node.appendChild(self.current_token)
+            kind = self.current_token.childNodes[0].nodeValue
             self.__idx_advance()
         else:
             raise SyntaxError("'static' or 'method' expected.")
 
         if self.current_token.nodeName == 'identifier' or \
-                self.current_token.childNodes[0].nodeValue in['int','char','boolean']:
+                self.current_token.childNodes[0].nodeValue in ['int', 'char', 'boolean']:
             class_var_dec_node.appendChild(self.current_token)
+            typ = self.current_token.childNodes[0].nodeValue
             self.__idx_advance()
         else:
             raise SyntaxError('Type expected.')
 
         if self.current_token.nodeName == 'identifier':
             class_var_dec_node.appendChild(self.current_token)
+            name = self.current_token.childNodes[0].nodeValue
+            self.symbol_table.define(name, kind, typ)
             self.__idx_advance()
         else:
             raise SyntaxError('Identifier expected.')
@@ -76,6 +110,8 @@ class CompilationEngine:
             self.__idx_advance()
             if self.current_token.nodeName == 'identifier':
                 class_var_dec_node.appendChild(self.current_token)
+                name = self.current_token.childNodes[0].nodeValue
+                self.symbol_table.define(name, kind, typ)
                 self.__idx_advance()
             else:
                 raise SyntaxError('Identifier expected.')
@@ -87,11 +123,13 @@ class CompilationEngine:
             raise SyntaxError("';' expected.")
 
     def compile_subroutine_dec(self, father_node):
+        self.symbol_table.clean_subroutine_table()
         if self.current_token.nodeName == 'keyword' and \
                 self.current_token.childNodes[0].nodeValue in ['constructor', 'function', 'method']:
             subroutine_dec_node = self.doc.createElement('subroutineDec')
             father_node.appendChild(subroutine_dec_node)
             subroutine_dec_node.appendChild(self.current_token)
+            self.subroutine_type = self.current_token.childNodes[0].nodeValue
             self.__idx_advance()
         else:
             raise SyntaxError("Keyword 'constructor', 'function' or 'method' expected.")
@@ -105,9 +143,13 @@ class CompilationEngine:
 
         if self.current_token.nodeName == 'identifier':
             subroutine_dec_node.appendChild(self.current_token)
+            typ = self.current_token.childNodes[0].nodeValue
             self.__idx_advance()
         else:
             raise SyntaxError('Identifier expected.')
+
+        if self.subroutine_type == 'method':
+            self.symbol_table.define('this', 'argument', typ)
 
         if self.current_token.nodeName == 'symbol' and self.current_token.childNodes[0].nodeValue == '(':
             subroutine_dec_node.appendChild(self.current_token)
@@ -117,9 +159,9 @@ class CompilationEngine:
 
         self.compile_parameter_list(subroutine_dec_node)
 
-        if self.current_token.nodeName == 'symbol' and  self.current_token.childNodes[0].nodeValue == ')':
-                subroutine_dec_node.appendChild(self.current_token)
-                self.__idx_advance()
+        if self.current_token.nodeName == 'symbol' and self.current_token.childNodes[0].nodeValue == ')':
+            subroutine_dec_node.appendChild(self.current_token)
+            self.__idx_advance()
         else:
             raise SyntaxError("')' expected.")
 
@@ -131,9 +173,12 @@ class CompilationEngine:
         if self.current_token.nodeName == 'identifier' or \
                 self.current_token.childNodes[0].nodeValue in ['int', 'char', 'boolean']:
             parameter_list_node.appendChild(self.current_token)
+            typ = self.current_token.childNodes[0].nodeValue
             self.__idx_advance()
             if self.current_token.nodeName == 'identifier':
                 parameter_list_node.appendChild(self.current_token)
+                name = self.current_token.childNodes[0].nodeValue
+                self.symbol_table.define(name, 'argument', typ)
                 self.__idx_advance()
             else:
                 raise SyntaxError('Identifier expected.')
@@ -144,9 +189,12 @@ class CompilationEngine:
                 if self.current_token.nodeName == 'identifier' or \
                         self.current_token.childNodes[0].nodeValue in ['int', 'char', 'boolean']:
                     parameter_list_node.appendChild(self.current_token)
+                    typ = self.current_token.childNodes[0].nodeValue
                     self.__idx_advance()
                     if self.current_token.nodeName == 'identifier':
                         parameter_list_node.appendChild(self.current_token)
+                        name = self.current_token.childNodes[0].nodeValue
+                        self.symbol_table.define(name, 'argument', typ)
                         self.__idx_advance()
         else:
             empty_text_node = self.doc.createTextNode('')
@@ -184,12 +232,15 @@ class CompilationEngine:
         if self.current_token.nodeName == 'identifier' or \
                 self.current_token.childNodes[0].nodeValue in ['int', 'char', 'boolean']:
             var_dec_node.appendChild(self.current_token)
+            typ = self.current_token.childNodes[0].nodeValue
             self.__idx_advance()
         else:
             raise SyntaxError('Type expected.')
 
         if self.current_token.nodeName == 'identifier':
             var_dec_node.appendChild(self.current_token)
+            name = self.current_token.childNodes[0].nodeValue
+            self.symbol_table.define(name, 'local', typ)
             self.__idx_advance()
         else:
             raise SyntaxError('Identifier expected.')
@@ -199,6 +250,8 @@ class CompilationEngine:
             self.__idx_advance()
             if self.current_token.nodeName == 'identifier':
                 var_dec_node.appendChild(self.current_token)
+                name = self.current_token.childNodes[0].nodeValue
+                self.symbol_table.define(name, 'local', typ)
                 self.__idx_advance()
             else:
                 raise SyntaxError('Identifier expected.')
@@ -238,7 +291,7 @@ class CompilationEngine:
             let_node.appendChild(self.current_token)
             self.__idx_advance()
         else:
-            raise SyntaxError('Identifier exprected.')
+            raise SyntaxError('Identifier expected.')
 
         if self.current_token.nodeName == 'symbol' and self.current_token.childNodes[0].nodeValue == '[':
             let_node.appendChild(self.current_token)
@@ -404,6 +457,7 @@ class CompilationEngine:
             return_node = self.doc.createElement('returnStatement')
             father_node.appendChild(return_node)
             return_node.appendChild(self.current_token)
+            self.vm_writer.write_return()
             self.__idx_advance()
         else:
             raise SyntaxError("'return' expected.")
@@ -423,14 +477,30 @@ class CompilationEngine:
         while self.current_token.nodeName == 'symbol' and \
                 self.current_token.childNodes[0].nodeValue in ['+', '-', '*', '/', '&', '|', '<', '>', '=']:
             expression_node.appendChild(self.current_token)
+            op_code = self.current_token.childNodes[0].nodeValue
             self.__idx_advance()
             self.compile_term(expression_node)
+            if op_code == '*':
+                self.vm_writer.write_function('Math.multiply', 2)
+            elif op_code == '/':
+                self.vm_writer.write_function('Math.divide', 2)
+            else:
+                self.vm_writer.write_arithmetic(self.ARITHMETIC_OPCODES[op_code])
 
     def compile_term(self, father_node):
         term_node = self.doc.createElement('term')
         father_node.appendChild(term_node)
         if self.current_token.nodeName in ['integerConstant', 'stringConstant']:
             term_node.appendChild(self.current_token)
+            if self.current_token.nodeName =='integerConstant':
+                self.vm_writer.write_push('constant',self.current_token.childNodes[0].nodeValue)
+            else:
+                string =self.current_token.childNodes[0].nodeValue
+                self.vm_writer.write_push('constant',len(string))
+                self.vm_writer.write_function('String.new','1')
+                string=list(map(ord,string))
+                for char in string:
+                    self.vm_writer.write_push('constant',char)
             self.__idx_advance()
 
         elif self.current_token.nodeName == 'keyword' and \
@@ -480,14 +550,17 @@ class CompilationEngine:
             self.compile_expression(term_node)
             if self.current_token.nodeName == 'symbol' and self.current_token.childNodes[0].nodeValue == ')':
                 term_node.appendChild(self.current_token)
+                self.__idx_advance()
             else:
                 raise SyntaxError("'(' expected.")
 
         # Processing unaryOp term
         elif self.current_token.nodeName == 'symbol' and self.current_token.childNodes[0].nodeValue in ['-', '~']:
             term_node.appendChild(self.current_token)
+            unary_opcode = self.current_token.childNodes[0].nodeValue
             self.__idx_advance()
             self.compile_term(term_node)
+            self.vm_writer.write_arithmetic(self.ARITHMETIC_UNARY_OPCODE[unary_opcode])
 
         # Processing subroutineCall
         else:
@@ -507,7 +580,7 @@ class CompilationEngine:
             expression_list_node.appendChild(empty_text_node)
 
     def __idx_advance(self):
-        if self.input_child_node_idx<len(self.in_xml.documentElement.childNodes)-1:
+        if self.input_child_node_idx < len(self.in_xml.documentElement.childNodes) - 1:
             self.input_child_node_idx = self.input_child_node_idx + 1
             self.current_token = self.in_xml.documentElement.childNodes[self.input_child_node_idx]
             if not isinstance(self.current_token, xml.dom.minidom.Element):

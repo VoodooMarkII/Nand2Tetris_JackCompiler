@@ -91,7 +91,16 @@ class JackTokenizer:
     def remove_blank_and_comment(file):
         lines_pure = []
         for line in file.readlines():
-            if line != '\n' and line.strip()[0:3]!='/**':
+            sss=line.strip()
+            if line.strip() in['\n',''] :
+                pass
+            elif line.strip()[0:3] == '/**':
+                pass
+            elif line.strip()[0] == '*':
+                pass
+            elif line.strip()[0:2]=='*/':
+                pass
+            else:
                 pattern = re.compile(r'//.*\n')
                 line_pure = re.sub(pattern, '', line)  # Remove comment
                 line_pure = line_pure.strip()
