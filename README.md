@@ -11,7 +11,7 @@ Python 3.6+
 ## How to use:
 Run:
 ```bash
-python JackCompiler path
+python JackCompiler.py path
 ```
 * `path`  Accept both directory and single filename.
 
