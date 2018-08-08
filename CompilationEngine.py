@@ -158,13 +158,6 @@ class CompilationEngine:
 
         if self.subroutine_type == 'method':
             self.symbol_table.define('this', 'argument', typ)
-        #     self.vm_writer.write_push('argument', '0')
-        #     self.vm_writer.write_pop('this', '0')
-        # elif self.subroutine_type == 'constructor':
-        #     field_num = self.symbol_table.var_count('field')
-        #     self.vm_writer.write_push('constant', str(field_num))
-        #     self.vm_writer.write_call('Memory.alloc', '1')
-        #     self.vm_writer.write_pop('pointer','1')
 
         if self.current_token.nodeName == 'symbol' and self.current_token.childNodes[0].nodeValue == '(':
             subroutine_dec_node.appendChild(self.current_token)
@@ -176,20 +169,9 @@ class CompilationEngine:
 
         if self.current_token.nodeName == 'symbol' and self.current_token.childNodes[0].nodeValue == ')':
             subroutine_dec_node.appendChild(self.current_token)
-            # if self.subroutine_type in ['method', 'constructor']:
-            #     self.vm_writer.write_function(self.subtoutine_name, str(parameter_number))
             self.__idx_advance()
         else:
             raise SyntaxError("')' expected.")
-
-            pass
-            # self.vm_writer.write_push('argument', '0')
-            # self.vm_writer.write_pop('this', '0')
-        # elif self.subroutine_type == 'constructor':
-        #     field_num = self.symbol_table.var_count('field')
-        #     self.vm_writer.write_push('constant', str(field_num))
-        #     self.vm_writer.write_call('Memory.alloc', '1')
-        #     self.vm_writer.write_pop('pointer','1')
 
         self.compile_subroutine_body(subroutine_dec_node)
 
