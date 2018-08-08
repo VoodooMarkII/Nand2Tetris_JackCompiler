@@ -44,7 +44,7 @@ class VMWriter:
         self.file.write('if-goto %s\n' % label)
 
     def write_call(self, name, n_args):
-        self.file.write('call %s %d\n' % (name, n_args))
+        self.file.write('call %s %s\n' % (name, n_args))
 
     def write_function(self, name, n_locals):
         self.file.write('function %s %s\n' % (name, n_locals))

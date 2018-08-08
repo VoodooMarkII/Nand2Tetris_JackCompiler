@@ -5,17 +5,17 @@ class SymbolTable:
         pass
 
     def define(self, name, kind, typ):
-        number = self.var_count(kind)
+        index = self.var_count(kind)
         if kind in ['static', 'field']:
             if len(self.symbol_table_class) == 0 or \
                     not list(filter(lambda dict_item: name == dict_item['name'], self.symbol_table_class)):
-                self.symbol_table_class.append({'name': name, 'kind': kind, 'type': typ, 'number': number})
+                self.symbol_table_class.append({'name': name, 'kind': kind, 'type': typ, 'index': index})
             else:
                 raise SyntaxError(name + ' redefined.')
         elif kind in ['argument', 'local']:
             if len(self.symbol_table_subroutine) == 0 or \
                     not list(filter(lambda dict_item: name == dict_item['name'], self.symbol_table_subroutine)):
-                self.symbol_table_subroutine.append({'name': name, 'kind': kind, 'type': typ, 'number': number})
+                self.symbol_table_subroutine.append({'name': name, 'kind': kind, 'type': typ, 'index': index})
             else:
                 raise SyntaxError(name + ' redefined.')
 
@@ -33,22 +33,27 @@ class SymbolTable:
         pass
 
     def kind_of(self, name):
-        pass
+        kind=self.search_symbol(name)['kind']
+        return kind
 
     def type_of(self, name):
-        pass
+        typ=self.search_symbol(name)['type']
+        return typ
 
     def index_of(self, name):
-        pass
+        index=self.search_symbol(name)['index']
+        return index
 
     def clean_subroutine_table(self):
         self.symbol_table_subroutine = []
 
     def search_symbol(self, name):
-        result = list(filter(lambda symbol_dict: name == symbol_dict['name'], self.symbol_table_class))[0]
-        if not result:
+        if list(filter(lambda symbol_dict: name == symbol_dict['name'], self.symbol_table_class)):
+            result = list(filter(lambda symbol_dict: name == symbol_dict['name'], self.symbol_table_class))[0]
+
+        elif list(filter(lambda symbol_dict: name == symbol_dict['name'], self.symbol_table_subroutine)):
             result = list(filter(lambda symbol_dict: name == symbol_dict['name'], self.symbol_table_subroutine))[0]
-        if result:
-            return result
         else:
-            raise RuntimeError('Symbol name '+name+' not found.')
+            return None
+        return result
+

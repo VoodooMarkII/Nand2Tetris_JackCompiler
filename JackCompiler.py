@@ -7,7 +7,7 @@ import sys
 
 class JackAnalyzer:
     def __init__(self, input_path):
-        self.input_filenames = []
+        self.input_filenames = sys.argv[1]
         self.tokenizer_output_filename = ''
         self.final_output_filename = ''
         if os.path.isdir(input_path):
@@ -22,6 +22,8 @@ class JackAnalyzer:
                 self.input_filenames.append(input_path)
             else:
                 raise IOError('Error input file type.')
+        else:
+            raise IOError('Folder "%s" does not exist.'% input_path)
 
     def run(self):
         for input_filename in self.input_filenames:
@@ -57,4 +59,4 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    main(r'D:\Dropbox\SEU_Graduate\nand2tetris\projects\10\Square')
+    main(sys.argv)
