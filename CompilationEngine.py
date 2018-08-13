@@ -30,8 +30,9 @@ class CompilationEngine:
         self.input_filename = input_filename
         self.output_file = output_file
         self.symbol_table = SymbolTable.SymbolTable()
+        self.token_text = ''
 
-        self.subtoutine_name = ''
+        self.subroutine_name = ''
         self.subroutine_type = ''
         self.class_name = ''
         self.if_index = 0
@@ -39,53 +40,31 @@ class CompilationEngine:
         self.var_number = 0
 
         self.in_xml = xml.dom.minidom.parse(self.input_filename)
-        self.input_child_node_idx = 1
+        self.input_child_node_idx = 0
 
         self.vm_writer = VMWriter.VMWriter(input_filename[:-5])
 
         self.current_token = self.in_xml.documentElement.childNodes[self.input_child_node_idx]
         self.doc = xml.dom.minidom.Document()
-        while self.current_token.nodeName == 'keyword' and self.current_token.childNodes[0].nodeValue == 'class':
-            self.compile_class()
-        self.__save_xml()
 
-        pass
+        while self.get_token() == 'class':
+            self.compile_class()
 
     def compile_class(self):
-        if self.current_token.childNodes[0].nodeValue == 'class':
-            class_node = self.doc.createElement('class')
-            self.doc.appendChild(class_node)
-            class_node.appendChild(self.current_token)
-            self.__idx_advance()
-        else:
-            raise SyntaxError("Keyword 'class' expected.")
+        self.get_token()  # Compile className
+        self.class_name = self.token_text
+        self.next_token() #Compile {
+        while self.get_token() in ['static', 'field']:
+            self.compile_class_var_dec()
+        while self.get_token() in ['constructor', 'function', 'method']:
+            self.compile_subroutine_dec()
+        self.get_token()#Compile }
 
-        if self.current_token.nodeName == 'identifier':
-            class_node.appendChild(self.current_token)
-            self.class_name = self.current_token.childNodes[0].nodeValue
-            self.__idx_advance()
-        else:
-            raise SyntaxError('className expected.')
 
-        if self.current_token.nodeName == 'symbol' and self.current_token.childNodes[0].nodeValue == '{':
-            class_node.appendChild(self.current_token)
-            self.__idx_advance()
-            while self.current_token.nodeName == 'keyword' and \
-                    self.current_token.childNodes[0].nodeValue in ['static', 'field']:
-                self.compile_class_var_dec(class_node)
-            while self.current_token.nodeName == 'keyword' and \
-                    self.current_token.childNodes[0].nodeValue in ['constructor', 'function', 'method']:
-                self.compile_subroutine_dec(class_node)
-        else:
-            raise SyntaxError("'{' expected.")
 
-        if self.current_token.nodeName == 'symbol' and self.current_token.childNodes[0].nodeValue == '}':
-            class_node.appendChild(self.current_token)
-            self.__idx_advance()
-        else:
-            raise SyntaxError("'}' expected.")
 
-    def compile_class_var_dec(self, father_node):
+
+    def compile_class_var_dec(self):
         if self.current_token.nodeName == 'keyword' and \
                 self.current_token.childNodes[0].nodeValue in ['static', 'field']:
             class_var_dec_node = self.doc.createElement('classVarDec')
@@ -152,7 +131,7 @@ class CompilationEngine:
             subroutine_dec_node.appendChild(self.current_token)
             name = typ = self.current_token.childNodes[0].nodeValue
             self.__idx_advance()
-            self.subtoutine_name = '%s.%s' % (self.class_name, name)
+            self.subroutine_name = '%s.%s' % (self.class_name, name)
         else:
             raise SyntaxError('Identifier expected.')
 
@@ -224,7 +203,7 @@ class CompilationEngine:
         while self.current_token.nodeName == 'keyword' and self.current_token.childNodes[0].nodeValue == 'var':
             self.compile_var_dec(subroutine_body_node)
         # if self.subroutine_type=='function':
-        self.vm_writer.write_function(self.subtoutine_name, self.var_number)
+        self.vm_writer.write_function(self.subroutine_name, self.var_number)
         if self.subroutine_type == 'method':
             self.vm_writer.write_push('argument', '0')
             self.vm_writer.write_pop('pointer', '0')
@@ -685,6 +664,25 @@ class CompilationEngine:
             self.current_token = self.in_xml.documentElement.childNodes[self.input_child_node_idx]
             if not isinstance(self.current_token, xml.dom.minidom.Element):
                 self.__idx_advance()
+
+    def advance(self):
+        if self.input_child_node_idx < len(self.in_xml.documentElement.childNodes) - 1:
+            self.input_child_node_idx = self.input_child_node_idx + 1
+            self.current_token = self.in_xml.documentElement.childNodes[self.input_child_node_idx]
+            if not isinstance(self.current_token, xml.dom.minidom.Element):
+                self.__idx_advance()
+
+    def get_token(self):
+        if self.input_child_node_idx < len(self.in_xml.documentElement.childNodes) - 1:
+            self.input_child_node_idx = self.input_child_node_idx + 1
+            current_token = self.in_xml.documentElement.childNodes[self.input_child_node_idx]
+            if not isinstance(current_token, xml.dom.minidom.Element):
+                self.next_token()
+            self.token_text = self.in_xml.documentElement.childNodes[self.input_child_node_idx].childNodes[0].nodeValue
+        return self.token_text
+
+    def peek(self):
+        pass
 
     def __save_xml(self):
         self.output_file.write(self.doc.toprettyxml(indent='  '))
