@@ -6,51 +6,67 @@ class VMWriter:
         self.filename = filename + '.vm'
 
         if os.path.isfile(self.filename):
-            print(self.filename+' exists. It will be replaced.')
+            print(self.filename + ' exists. It will be replaced.')
             os.remove(self.filename)
         self.file = open(self.filename, 'a')
 
     def write_push(self, segment, index):
         """
-        :param segment: in list[CONST,ARG,LCL,STATIC,THIS,THAT,POINTER,TEMP]
+        :param segment: in list[constant, local, argument, static, this, that, pointer, temp]
         :param index: Offset of given segment
         :return: VM push command with given segment and index
         """
-        self.file.write('push %s %s\n' % (segment, index))
+        cmd = 'push {segment} {index}'.format(segment=segment, index=index)
+        self.file.write(cmd + '\n')
+        return cmd
 
     def write_pop(self, segment, index):
         """
-        :param segment: in list[ARG,LCL,STATIC,THIS,THAT,POINTER,TEMP]
+        :param segment: in list[local, argument, static, this, that, pointer, temp]
         :param index: Offset of given segment
         :return: VM pop command with given segment and index
         """
+        cmd = 'pop {segment} {index}'.format(segment=segment, index=index)
+        self.file.write(cmd + '\n')
+        return cmd
 
-        self.file.write('pop %s %s\n' % (segment, index))
-
-    def write_arithmetic(self, command):
+    def write_arithmetic(self, cmd):
         """
-        :param command: in the list[ADD, SUB, NEG, EQ, GT, LT, AND, OR, NOT)
+        :param cmd: in the list[add, sub, neg, eq, gt, lt, and, or, not]
         :return:  VM arithmetic command with given segment and index
         """
-        self.file.write(command+'\n')
+        self.file.write(cmd + '\n')
+        return cmd
 
     def write_label(self, label):
-        self.file.write('label %s\n' % label)
+        cmd = 'label {label}'.format(label=label)
+        self.file.write(cmd + '\n')
+        return cmd
 
     def write_goto(self, label):
-        self.file.write('goto %s\n' % label)
+        cmd = 'goto {label}'.format(label=label)
+        self.file.write(cmd + '\n')
+        return cmd
 
     def write_if(self, label):
-        self.file.write('if-goto %s\n' % label)
+        cmd = 'if-goto {label}'.format(label=label)
+        self.file.write(cmd + '\n')
+        return cmd
 
     def write_call(self, name, n_args):
-        self.file.write('call %s %s\n' % (name, n_args))
+        cmd = 'call {name} {n_args}'.format(name=name, n_args=n_args)
+        self.file.write(cmd + '\n')
+        return cmd
 
     def write_function(self, name, n_locals):
-        self.file.write('function %s %s\n' % (name, n_locals))
+        cmd = 'function {name} {n_locals}'.format(name=name, n_locals=n_locals)
+        self.file.write(cmd + '\n')
+        return cmd
 
     def write_return(self):
-        self.file.write('return\n')
+        cmd = 'return'
+        self.file.write(cmd + '\n')
+        return cmd
 
     def close(self):
         self.file.close()
