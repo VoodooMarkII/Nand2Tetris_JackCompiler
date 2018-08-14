@@ -7,7 +7,7 @@ import sys
 
 class JackAnalyzer:
     def __init__(self, input_path):
-        self.input_filenames = sys.argv[1]
+        self.input_filenames = []
         self.tokenizer_output_filename = ''
         self.final_output_filename = ''
         if os.path.isdir(input_path):
@@ -59,4 +59,4 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    main(r'D:\Dropbox\SEU_Graduate\nand2tetris\projects\11\Pong')
