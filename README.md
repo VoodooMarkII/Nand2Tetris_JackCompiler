@@ -1,5 +1,7 @@
 # Nand2Tetris_JackCompiler
 
+**NOTE:** If input jack files contain no syntax error, please use `simplified` branch for better performance.
+
 This compiler is the project 11 of nand2tetris course. JackCompiler compiles *.jack files to *.vm files,
 which is the virtual machine language used in nand2tetris course.
 
