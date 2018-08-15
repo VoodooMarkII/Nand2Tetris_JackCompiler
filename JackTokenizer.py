@@ -46,7 +46,7 @@ class JackTokenizer:
         self.dst = re.match(pattern, self.lines_pure[self.line_index])
         if self.dst.group() != '':
             self.dst = self.dst.group()
-            if 0<=int(self.dst)<=32767:
+            if 0 <= int(self.dst) <= 32767:
                 return 'INT_CONST'
             else:
                 raise SyntaxError('Integer is out of range of (0,32767).')
@@ -59,23 +59,23 @@ class JackTokenizer:
         raise SyntaxError('Invalid syntax in line: ' + self.lines_pure[self.line_index])
 
     def keyword(self):
-        self.__write_xml('keyword',self.dst)
+        self.__write_xml('keyword', self.dst)
         return self.dst.upper()
 
     def symbol(self):
-        self.__write_xml('symbol',self.dst)
+        self.__write_xml('symbol', self.dst)
         return self.dst.upper()
 
     def identifier(self):
-        self.__write_xml('identifier',self.dst)
+        self.__write_xml('identifier', self.dst)
         return self.dst
 
     def int_val(self):
-        self.__write_xml('integerConstant',self.dst)
+        self.__write_xml('integerConstant', self.dst)
         return self.dst
 
     def string_val(self):
-        self.__write_xml('stringConstant',self.dst.strip('"'))
+        self.__write_xml('stringConstant', self.dst.strip('"'))
         return self.dst.strip('"')
 
     def save_xml(self):
@@ -91,14 +91,13 @@ class JackTokenizer:
     def remove_blank_and_comment(file):
         lines_pure = []
         for line in file.readlines():
-            sss=line.strip()
-            if line.strip() in['\n',''] :
+            if line.strip() in ['\n', '']:
                 pass
             elif line.strip()[0:3] == '/**':
                 pass
             elif line.strip()[0] == '*':
                 pass
-            elif line.strip()[0:2]=='*/':
+            elif line.strip()[0:2] == '*/':
                 pass
             else:
                 pattern = re.compile(r'//.*\n')

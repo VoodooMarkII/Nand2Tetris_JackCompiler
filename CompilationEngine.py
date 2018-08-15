@@ -26,27 +26,23 @@ class CompilationEngine:
         'static': 'static'
     }
 
-    def __init__(self, input_filename, output_file=None):
+    def __init__(self, input_filename):
         self.input_filename = input_filename
-        self.output_file = output_file
         self.symbol_table = SymbolTable.SymbolTable()
-        self.token_text = ''
-        self.token_type = ''
-
-        self.subroutine_name = ''
-        self.subroutine_type = ''
-        self.class_name = ''
-        self.if_index = 0
-        self.while_index = 0
-        self.var_number = 0
-
         self.in_xml = xml.dom.minidom.parse(self.input_filename)
         self.input_child_node_idx = 0
 
         self.vm_writer = VMWriter.VMWriter(input_filename[:-5])
+        self.token_text = ''
+        self.token_type = ''
 
-        self.current_token = self.in_xml.documentElement.childNodes[self.input_child_node_idx]
-        self.doc = xml.dom.minidom.Document()
+        self.class_name = ''
+        self.subroutine_name = ''
+        self.subroutine_type = ''
+
+        self.if_index = 0
+        self.while_index = 0
+        self.var_number = 0
 
         while self.get_token() == 'class':
             self.compile_class()
@@ -90,7 +86,7 @@ class CompilationEngine:
 
         self.get_token()  # Compiling symbol '('
 
-        parameter_number = self.compile_parameter_list()
+        self.compile_parameter_list()
 
         self.get_token()  # Compiling symbol ')'
 
@@ -99,7 +95,7 @@ class CompilationEngine:
     def compile_parameter_list(self):
         parameter_number = 0
 
-        if self.next_token() !=')':
+        if self.next_token() != ')':
             typ = self.get_token()  # Compiling parameter type
             name = self.get_token()  # Compiling parameter name
             self.symbol_table.define(name, 'argument', typ)
@@ -199,7 +195,7 @@ class CompilationEngine:
         self.get_token()  # Compiling symbol '}'
 
         if self.next_token() == 'else':
-            self.get_token() # Compiling keyword else
+            self.get_token()  # Compiling keyword else
             self.get_token()  # Compiling symbol '{'
             self.vm_writer.write_goto('IF_TRUE_EXIT.' + str(if_index))
             self.vm_writer.write_label('IF.FALSE' + str(if_index))
@@ -227,7 +223,6 @@ class CompilationEngine:
         self.get_token()  # Compiling symbol '}'
 
     def compile_do(self):
-        n_args = 0
         self.get_token()  # Compiling keyword do
         self.compile_subroutine_call()
         self.get_token()  # Compiling symbol ';'
@@ -236,7 +231,6 @@ class CompilationEngine:
     def compile_subroutine_call(self):
         n_args = 0
         name = self.get_token()
-        func_name = '{class_name}.{subroutine_name}'.format(class_name=self.class_name, subroutine_name=name)
         if self.next_token() == '(':  # Handling call self
             self.get_token()  # Compiling symbol '('
             self.vm_writer.write_push('pointer', 0)
@@ -258,6 +252,8 @@ class CompilationEngine:
             n_args += self.compile_expression_list()
             self.vm_writer.write_call(func_name, n_args)
             self.get_token()  # Compiling symbol ')'
+        else:
+            pass
 
     def compile_return(self):
         self.get_token()  # Compiling return
@@ -281,7 +277,6 @@ class CompilationEngine:
                 self.vm_writer.write_arithmetic(self.ARITHMETIC_OPCODES[op_code])
 
     def compile_term(self):
-        n_args = 0
         #  Handling integer constant
         if self.next_token_type() == 'integerConstant':
             int_val = self.get_token()
@@ -358,7 +353,8 @@ class CompilationEngine:
             if not isinstance(current_token, xml.dom.minidom.Element):
                 self.get_token()
             else:
-                self.token_text = self.in_xml.documentElement.childNodes[self.input_child_node_idx].childNodes[0].nodeValue
+                self.token_text = self.in_xml.documentElement.childNodes[self.input_child_node_idx].childNodes[
+                    0].nodeValue
                 self.token_type = self.in_xml.documentElement.childNodes[self.input_child_node_idx].nodeName
             return self.token_text
         else:
@@ -371,29 +367,27 @@ class CompilationEngine:
         return self.token_type
 
     def next_token(self, step=1):
-        token_cnt=0
+        token_cnt = 0
         if self.input_child_node_idx < len(self.in_xml.documentElement.childNodes) - 1:
             idx = self.input_child_node_idx
         else:
             return None
-        while idx < len(self.in_xml.documentElement.childNodes) - 1 and token_cnt<step:
+        while idx < len(self.in_xml.documentElement.childNodes) - 1 and token_cnt < step:
             idx += 1
             while not isinstance(self.in_xml.documentElement.childNodes[idx], xml.dom.minidom.Element):
                 idx += 1
-            token_cnt+=1
+            token_cnt += 1
         return self.in_xml.documentElement.childNodes[idx].childNodes[0].nodeValue
 
-
     def next_token_type(self, step=1):
-        token_cnt =0
+        token_cnt = 0
         if self.input_child_node_idx < len(self.in_xml.documentElement.childNodes) - 1:
             idx = self.input_child_node_idx
         else:
             return None
-        while idx < len(self.in_xml.documentElement.childNodes) - 1 and token_cnt<step:
-            idx+=1
+        while idx < len(self.in_xml.documentElement.childNodes) - 1 and token_cnt < step:
+            idx += 1
             while not isinstance(self.in_xml.documentElement.childNodes[idx], xml.dom.minidom.Element):
                 idx += 1
-            token_cnt +=1
+            token_cnt += 1
         return self.in_xml.documentElement.childNodes[idx].nodeName
-

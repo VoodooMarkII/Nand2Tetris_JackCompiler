@@ -5,16 +5,15 @@ import os
 import sys
 
 
-class JackAnalyzer:
+class JackCompiler:
     def __init__(self, input_path):
         self.input_filenames = []
         self.tokenizer_output_filename = ''
-        self.final_output_filename = ''
         if os.path.isdir(input_path):
-            path=os.listdir(input_path)
+            path = os.listdir(input_path)
             for filename in path:
-                if filename.split('.')[-1]=='jack':
-                    self.input_filenames.append(os.path.join(input_path,filename))
+                if filename.split('.')[-1] == 'jack':
+                    self.input_filenames.append(os.path.join(input_path, filename))
             if len(self.input_filenames) == 0:
                 raise IOError('Jack file not found.')
         elif os.path.isfile(input_path):
@@ -23,14 +22,15 @@ class JackAnalyzer:
             else:
                 raise IOError('Error input file type.')
         else:
-            raise IOError('Folder "%s" does not exist.'% input_path)
+            raise IOError('Folder "%s" does not exist.' % input_path)
 
     def run(self):
         for input_filename in self.input_filenames:
-            self.tokenizer_output_filename = input_filename.split('.')[0] + 'T.xml'
-            self.final_output_filename = input_filename.split('.')[0] + '.xml'
+            self.tokenizer_output_filename = str(input_filename.split('.')[0]) + 'T.xml'
+            print('Compiling ' + input_filename)
+
+            # Tokenizer generate xml file for CompilationEngine
             with open(input_filename) as in_f:
-                print('Compiling ' + input_filename)
                 with open(self.tokenizer_output_filename, 'w') as out_f:
                     jt = JackTokenizer.JackTokenizer(in_f, out_f)
                     while jt.has_more_tokens():
@@ -48,15 +48,15 @@ class JackAnalyzer:
                         jt.advance()
                     jt.save_xml()
 
-            with open(self.final_output_filename, 'w')as out_f:
-                ce = CompilationEngine.CompilationEngine(self.tokenizer_output_filename, out_f)
+            # Compile and generate VM code
+            CompilationEngine.CompilationEngine(self.tokenizer_output_filename, out_f)
         print('Compiling finished.')
 
 
 def main(argv=None):
-    ja = JackAnalyzer(argv)
-    ja.run()
+    jc = JackCompiler(argv)
+    jc.run()
 
 
 if __name__ == '__main__':
-    main(r"D:\Dropbox\SEU_Graduate\nand2tetris\projects\11\Pong")
+    main(sys.argv[1])

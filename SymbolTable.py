@@ -33,15 +33,15 @@ class SymbolTable:
         pass
 
     def kind_of(self, name):
-        kind=self.search_symbol(name)['kind']
+        kind = self.search_symbol(name)['kind']
         return kind
 
     def type_of(self, name):
-        typ=self.search_symbol(name)['type']
+        typ = self.search_symbol(name)['type']
         return typ
 
     def index_of(self, name):
-        index=self.search_symbol(name)['index']
+        index = self.search_symbol(name)['index']
         return index
 
     def clean_subroutine_table(self):
@@ -56,4 +56,3 @@ class SymbolTable:
         else:
             return None
         return result
-
