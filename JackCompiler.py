@@ -1,12 +1,30 @@
+import os
+import sys
 import JackTokenizer
 import CompilationEngine
 
-import os
-import sys
-
 
 class JackCompiler:
+    """
+    Compile the single *.jack file or all *.jack files in a directory.
+    This component compile *.jack files and generate *.vm files in the same directory.
+
+    Note: *T.xml file will be created as medium. Please ignore it.
+
+    Usage: Initialize the JackCompile with path then call run() method.
+
+    Attribute:
+        input_filenames: Store the path of input *jack files to be compiled.
+        tokenizer_output_filename: The xml filename during current compiling process.
+    """
     def __init__(self, input_path):
+        """
+        This method create the list which stores the *.jack files.
+
+        :param input_path: (string) The path of input *.jack files. Single file or directory are both acceptable.
+
+        :raise IOError: An error occurs during read/write operation.
+        """
         self.input_filenames = []
         self.tokenizer_output_filename = ''
         if os.path.isdir(input_path):
@@ -25,6 +43,11 @@ class JackCompiler:
             raise IOError('Folder "%s" does not exist.' % input_path)
 
     def run(self):
+        """
+        Compile all files in input_filenames. Generate xml and vm files.
+
+        :return: 0
+        """
         for input_filename in self.input_filenames:
             self.tokenizer_output_filename = str(input_filename.split('.')[0]) + 'T.xml'
             print('Compiling ' + input_filename)
@@ -49,8 +72,9 @@ class JackCompiler:
                     jt.save_xml()
 
             # Compile and generate VM code
-            CompilationEngine.CompilationEngine(self.tokenizer_output_filename, out_f)
+            CompilationEngine.CompilationEngine(self.tokenizer_output_filename)
         print('Compiling finished.')
+        return 0
 
 
 def main(argv=None):
