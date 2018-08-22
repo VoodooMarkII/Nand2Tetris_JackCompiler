@@ -1,10 +1,25 @@
 class SymbolTable:
+    """
+    Create and manage the symbol table of a class during the compiling process.
+    The table contains name, kind, type and index.
+    """
     def __init__(self):
         self.symbol_table_class = []
         self.symbol_table_subroutine = []
         pass
 
     def define(self, name, kind, typ):
+        """
+        This method add a record to symbol table. Redefinition will be checked before adding it to the table.
+
+        :param name: (string) The name of the symbol
+        :param kind: (string) The kind of the symbol. In list ['static', 'field', 'argument', 'local']
+        :param typ: (string) Data type of the symbol
+        :return: 0
+
+        :raise
+            Syntax Error: Redefinition of symbol.
+        """
         index = self.var_count(kind)
         if kind in ['static', 'field']:
             if len(self.symbol_table_class) == 0 or \
@@ -18,8 +33,15 @@ class SymbolTable:
                 self.symbol_table_subroutine.append({'name': name, 'kind': kind, 'type': typ, 'index': index})
             else:
                 raise SyntaxError(name + ' redefined.')
+        return 0
 
     def var_count(self, kind):
+        """
+        Lookup the symbol table and return the number of given kind in the symbol table.
+
+        :param kind:
+        :return: The number of given kind in the symbol table.
+        """
         if kind in ['static', 'field']:
             if len(self.symbol_table_class) == 0:
                 return 0

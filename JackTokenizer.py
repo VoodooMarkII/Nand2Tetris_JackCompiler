@@ -3,16 +3,23 @@ import xml.dom.minidom
 
 
 class JackTokenizer:
+    """
+    Receive *.jack file, output xml file.
+
+    Attribute:
+        lines_pure: List, store the jack code without comment and blank line.
+        dst: The value of current token.
+    """
+    KEYWORDS = ['class', 'constructor', 'function', 'method', 'field', 'static', 'var', 'int', 'char',
+                'boolean', 'void', 'true', 'false', 'null', 'this', 'let', 'do', 'if', 'else', 'while',
+                'return']
+    SYMBOLS = ['{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~']
+
     def __init__(self, in_file, out_file):
         self.in_file = in_file
         self.out_file = out_file
         self.lines_pure = self.remove_blank_and_comment(self.in_file)
-        self.keywords = ['class', 'constructor', 'function', 'method', 'field', 'static', 'var', 'int', 'char',
-                         'boolean', 'void', 'true', 'false', 'null', 'this', 'let', 'do', 'if', 'else', 'while',
-                         'return']
-        self.symbols = ['{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~']
         self.line_index = 0
-        self.token_index = 0
         self.dst = ''
         self.doc = xml.dom.minidom.Document()
         self.token = self.doc.createElement('tokens')
@@ -27,18 +34,26 @@ class JackTokenizer:
             self.line_index = self.line_index + 1
 
     def token_type(self):
+        """
+        Read the current token and judge the type of it.
+
+        :return: (string) Token type
+
+        :raise:
+            SyntaxError: Illegal integer constant or unknown token type.
+        """
         self.lines_pure[self.line_index] = self.lines_pure[self.line_index].strip()
         #  Match keywords and identifiers
         pattern = re.compile(r'^[a-zA-Z_][\w_]*')
         self.dst = re.match(pattern, self.lines_pure[self.line_index])
         if self.dst is not None:
             self.dst = self.dst.group()
-            if self.dst in self.keywords:
+            if self.dst in self.KEYWORDS:
                 return 'KEYWORD'
             else:
                 return 'IDENTIFIER'
         #  Match symbols
-        if self.lines_pure[self.line_index][0] in self.symbols:
+        if self.lines_pure[self.line_index][0] in self.SYMBOLS:
             self.dst = self.lines_pure[self.line_index][0]
             return 'SYMBOL'
         #  Match integer constant
