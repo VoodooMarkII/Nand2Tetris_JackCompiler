@@ -59,4 +59,4 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    main(r'D:\Dropbox\SEU_Graduate\nand2tetris\projects\11\Pong')
+    main(r'Pong')
