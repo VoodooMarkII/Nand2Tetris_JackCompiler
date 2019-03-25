@@ -15,9 +15,9 @@ Run:
 ```bash
 python JackCompiler.py path
 ```
-* `path`  Accept both directory and single filename.
+* `path`  The path of *.jack file(s). It can comiple single file or all *.jack files in given directory. Accept both directory and single filename.
 
-*.vm file will be genarated in the same directory. 
+*.vm file will be generated in the same directory. 
 
 **NOTE:** *.xml files are the by-product during the compiling. 
 
